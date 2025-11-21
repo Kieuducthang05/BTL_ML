@@ -1,0 +1,463 @@
+{
+ "cells": [
+  {
+   "cell_type": "code",
+   "execution_count": 4,
+   "id": "01353de7",
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Thư viện đã import xong!\n"
+     ]
+    }
+   ],
+   "source": [
+    " # Import các thư viện cần thiết\n",
+    "import pandas as pd\n",
+    "import numpy as np\n",
+    "import ast\n",
+    "import warnings\n",
+    "warnings.filterwarnings('ignore')\n",
+    "\n",
+    "print(\"Thư viện đã import xong!\")"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "41c401a6",
+   "metadata": {},
+   "source": [
+    "# Đọc file CSV"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 7,
+   "id": "1cbf3607",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Đọc file train.csv\n",
+    "df = pd.read_csv(\"train.csv\", dtype=str)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "8f805705",
+   "metadata": {},
+   "source": [
+    "1. Chuẩn hóa mouse1_age → 5 nhóm có thứ tự rõ ràng "
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 8,
+   "id": "89c38fc1",
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "mouse1_age trước khi chuẩn hóa:\n",
+      "mouse1_age\n",
+      "10-20 weeks    7926\n",
+      "NaN             649\n",
+      "> 40 weeks       53\n",
+      "17-21 weeks      52\n",
+      "8-12 weeks       50\n",
+      "8-26 weeks       24\n",
+      "8 weeks          21\n",
+      "7-14 weeks        8\n",
+      "12 weeks          6\n",
+      "Name: count, dtype: int64\n",
+      "\n",
+      "⇒ mouse1_age sau chuẩn hóa:\n",
+      "   mouse1_age  mouse1_age_code mouse1_age_label\n",
+      "0  8-12 weeks                3        8-12 tuần\n",
+      "1  8-12 weeks                3        8-12 tuần\n",
+      "2  8-12 weeks                3        8-12 tuần\n",
+      "3  8-12 weeks                3        8-12 tuần\n",
+      "4  8-12 weeks                3        8-12 tuần\n",
+      "5  8-12 weeks                3        8-12 tuần\n",
+      "6  8-12 weeks                3        8-12 tuần\n",
+      "7  8-12 weeks                3        8-12 tuần\n",
+      "8  8-12 weeks                3        8-12 tuần\n",
+      "9  8-12 weeks                3        8-12 tuần\n",
+      "mouse1_age_code\n",
+      "0    8680\n",
+      "3      50\n",
+      "4       6\n",
+      "5      53\n",
+      "Name: count, dtype: int64\n"
+     ]
+    }
+   ],
+   "source": [
+    "# Xem giá trị thực tế trước\n",
+    "print(\"mouse1_age trước khi chuẩn hóa:\")\n",
+    "print(df['mouse1_age'].value_counts(dropna=False))\n",
+    "\n",
+    "# Chuẩn hóa + gán số theo thứ tự tuổi tăng dần\n",
+    "age_mapping = {\n",
+    "    np.nan         : 0,   # không biết tuổi\n",
+    "    '4-6 weeks'    : 1,\n",
+    "    '6-12 weeks'   : 2,\n",
+    "    '8-12 weeks'   : 3,\n",
+    "    '12 weeks'    : 4,\n",
+    "    '>40 weeks'    : 5,\n",
+    "    '> 40 weeks'   : 5\n",
+    "}\n",
+    "\n",
+    "# Tạo 2 cột mới\n",
+    "df['mouse1_age_code'] = df['mouse1_age'].map(age_mapping).fillna(0).astype('int8')\n",
+    "\n",
+    "# Cột tên đẹp để plot\n",
+    "code_to_name = {0: 'Unknown', 1: '4-6 tuần', 2: '6-12 tuần', \n",
+    "                3: '8-12 tuần', 4: '12 tuần', 5: '>40 tuần'}\n",
+    "df['mouse1_age_label'] = df['mouse1_age_code'].map(code_to_name)\n",
+    "\n",
+    "print(\"\\n⇒ mouse1_age sau chuẩn hóa:\")\n",
+    "print(df[['mouse1_age', 'mouse1_age_code', 'mouse1_age_label']].head(10))\n",
+    "print(df['mouse1_age_code'].value_counts().sort_index())"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "40003406",
+   "metadata": {},
+   "source": [
+    "2. CELL 4 Chuẩn hóa arena_shape"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 9,
+   "id": "55f8948d",
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "arena_shape trước:\n",
+      "arena_shape\n",
+      "square               7961\n",
+      "rectangular           771\n",
+      "split rectangluar      36\n",
+      "circular               21\n",
+      "Name: count, dtype: int64\n",
+      "\n",
+      "⇒ arena_shape sau chuẩn hóa:\n",
+      "arena_shape_code\n",
+      " 0    7961\n",
+      " 1     771\n",
+      "-1      57\n",
+      "Name: count, dtype: int64\n"
+     ]
+    }
+   ],
+   "source": [
+    "print(\"arena_shape trước:\")\n",
+    "print(df['arena_shape'].value_counts(dropna=False))\n",
+    "\n",
+    "# Chỉ có 2 loại chính\n",
+    "df['arena_shape'] = df['arena_shape'].str.lower().str.strip()\n",
+    "\n",
+    "df['arena_shape_code'] = df['arena_shape'].map({\n",
+    "    'square'      : 0,\n",
+    "    'rectangular' : 1\n",
+    "}).fillna(-1).astype('int8')   # -1 nếu có giá trị lạ\n",
+    "\n",
+    "df['arena_shape_label'] = df['arena_shape_code'].map({0: 'Vuông', 1: 'Chữ nhật', -1: 'Khác'})\n",
+    "\n",
+    "print(\"\\n⇒ arena_shape sau chuẩn hóa:\")\n",
+    "print(df['arena_shape_code'].value_counts())"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "7f71355a",
+   "metadata": {},
+   "source": [
+    "3. CELL 5 Chuẩn hóa arena_type (loại thí nghiệm)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 15,
+   "id": "660da446",
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "arena_type trước:\n",
+      "arena_type\n",
+      "neutral                8017\n",
+      "resident-intruder       692\n",
+      "divided territories      36\n",
+      "familiar                 17\n",
+      "csds                     17\n",
+      "NaN                      10\n",
+      "Name: count, dtype: int64\n",
+      "\n",
+      "⇒ arena_type sau chuẩn hóa (giá trị từ -1 đến 3):\n",
+      "arena_type_code\n",
+      "-1      46\n",
+      " 0      17\n",
+      " 1     692\n",
+      " 2      17\n",
+      " 3    8017\n",
+      "Name: count, dtype: int64\n",
+      "\n",
+      "Mapping số ↔ tên:\n",
+      "   -1 → Không rõ\n",
+      "   0 → Chuồng quen - 4 chuột\n",
+      "   1 → Resident-Intruder\n",
+      "   2 → Chronic Social Defeat Stress\n",
+      "   3 → Lồng trung lập\n"
+     ]
+    }
+   ],
+   "source": [
+    "print(\"arena_type trước:\")\n",
+    "print(df['arena_type'].value_counts(dropna=False))\n",
+    "\n",
+    "# Chuẩn hóa tên viết thường + bỏ khoảng trắng thừa\n",
+    "df['arena_type'] = df['arena_type'].str.lower().str.strip()\n",
+    "\n",
+    "# Mapping trực tiếp sang số từ -1 đến 3 (không cần qua string trung gian)\n",
+    "arena_type_mapping = {\n",
+    "    'familiar'          : 0,   # Chuồng quen - 4 chuột\n",
+    "    'resident-intruder' : 1,   # Resident-Intruder\n",
+    "    'csds'              : 2,   # Chronic Social Defeat Stress\n",
+    "    'neutral'           : 3,   # Lồng trung lập\n",
+    "    np.nan              : -1,  # thiếu dữ liệu\n",
+    "    ''                  : -1   # chuỗi rỗng\n",
+    "}\n",
+    "\n",
+    "# Tạo cột số chính (giá trị từ -1 đến 3)\n",
+    "df['arena_type_code'] = df['arena_type'].map(arena_type_mapping).fillna(-1).astype('int8')\n",
+    "\n",
+    "# (Tùy chọn) Tạo cột tên đẹp để visualize\n",
+    "code_to_name = {\n",
+    "    -1: 'Không rõ',\n",
+    "     0: 'Chuồng quen - 4 chuột',\n",
+    "     1: 'Resident-Intruder',\n",
+    "     2: 'Chronic Social Defeat Stress',\n",
+    "     3: 'Lồng trung lập'\n",
+    "}\n",
+    "df['arena_type_name'] = df['arena_type_code'].map(code_to_name)\n",
+    "\n",
+    "# ==================== KẾT QUẢ ====================\n",
+    "print(\"\\n⇒ arena_type sau chuẩn hóa (giá trị từ -1 đến 3):\")\n",
+    "print(df['arena_type_code'].value_counts().sort_index())\n",
+    "\n",
+    "print(\"\\nMapping số ↔ tên:\")\n",
+    "for code, name in code_to_name.items():\n",
+    "    print(f\"   {code} → {name}\")\n"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "7c69d44b",
+   "metadata": {},
+   "source": [
+    "5. CELL 6 Kiểm tra kết quả cuối cùng & Lưu file"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 18,
+   "id": "b8eb4a5f",
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "3 cột đã được chuẩn hóa hoàn toàn:\n"
+     ]
+    },
+    {
+     "data": {
+      "text/html": [
+       "<div>\n",
+       "<style scoped>\n",
+       "    .dataframe tbody tr th:only-of-type {\n",
+       "        vertical-align: middle;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe tbody tr th {\n",
+       "        vertical-align: top;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe thead th {\n",
+       "        text-align: right;\n",
+       "    }\n",
+       "</style>\n",
+       "<table border=\"1\" class=\"dataframe\">\n",
+       "  <thead>\n",
+       "    <tr style=\"text-align: right;\">\n",
+       "      <th></th>\n",
+       "      <th>mouse1_age_code</th>\n",
+       "      <th>arena_shape_code</th>\n",
+       "      <th>arena_type_code</th>\n",
+       "    </tr>\n",
+       "  </thead>\n",
+       "  <tbody>\n",
+       "    <tr>\n",
+       "      <th>0</th>\n",
+       "      <td>3</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>1</th>\n",
+       "      <td>3</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>2</th>\n",
+       "      <td>3</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>3</th>\n",
+       "      <td>3</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>4</th>\n",
+       "      <td>3</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>...</th>\n",
+       "      <td>...</td>\n",
+       "      <td>...</td>\n",
+       "      <td>...</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>95</th>\n",
+       "      <td>0</td>\n",
+       "      <td>1</td>\n",
+       "      <td>1</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>96</th>\n",
+       "      <td>0</td>\n",
+       "      <td>1</td>\n",
+       "      <td>1</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>97</th>\n",
+       "      <td>0</td>\n",
+       "      <td>1</td>\n",
+       "      <td>1</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>98</th>\n",
+       "      <td>0</td>\n",
+       "      <td>1</td>\n",
+       "      <td>1</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>99</th>\n",
+       "      <td>0</td>\n",
+       "      <td>1</td>\n",
+       "      <td>1</td>\n",
+       "    </tr>\n",
+       "  </tbody>\n",
+       "</table>\n",
+       "<p>100 rows × 3 columns</p>\n",
+       "</div>"
+      ],
+      "text/plain": [
+       "    mouse1_age_code  arena_shape_code  arena_type_code\n",
+       "0                 3                 0                0\n",
+       "1                 3                 0                0\n",
+       "2                 3                 0                0\n",
+       "3                 3                 0                0\n",
+       "4                 3                 0                0\n",
+       "..              ...               ...              ...\n",
+       "95                0                 1                1\n",
+       "96                0                 1                1\n",
+       "97                0                 1                1\n",
+       "98                0                 1                1\n",
+       "99                0                 1                1\n",
+       "\n",
+       "[100 rows x 3 columns]"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "mouse1_age_code     int8\n",
+      "arena_shape_code    int8\n",
+      "arena_type_code     int8\n",
+      "dtype: object\n",
+      "\n",
+      "ĐÃ LƯU XONG!\n",
+      "→ train_3columns_normalized.pkl  (nhanh, giữ nguyên kiểu dữ liệu)\n",
+      "→ train_3columns_normalized.csv  (mở được bằng Excel)\n"
+     ]
+    }
+   ],
+   "source": [
+    "# Các cột mới bạn sẽ dùng từ giờ\n",
+    "new_cols = [\n",
+    "    'mouse1_age_code',\n",
+    "    'arena_shape_code',\n",
+    "    'arena_type_code', \n",
+    "]\n",
+    "\n",
+    "print(\"3 cột đã được chuẩn hóa hoàn toàn:\")\n",
+    "display(df[new_cols].head(100))\n",
+    "print(df[new_cols].dtypes)\n",
+    "\n",
+    "# Lưu lại để dùng tiếp\n",
+    "df.to_pickle(\"train_3columns_normalized.pkl\")\n",
+    "df.to_csv(\"train_3columns_normalized.csv\", index=False)\n",
+    "\n",
+    "print(\"\\nĐÃ LƯU XONG!\")\n",
+    "print(\"→ train_3columns_normalized.pkl  (nhanh, giữ nguyên kiểu dữ liệu)\")\n",
+    "print(\"→ train_3columns_normalized.csv  (mở được bằng Excel)\")"
+   ]
+  }
+ ],
+ "metadata": {
+  "kernelspec": {
+   "display_name": "Python 3",
+   "language": "python",
+   "name": "python3"
+  },
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 3
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython3",
+   "version": "3.12.9"
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 5
+}
