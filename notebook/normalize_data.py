@@ -40,13 +40,16 @@ def normalize_single_file(file_path, meta_map):
     except:
         return
 
-    # Lấy video_id từ tên file
-    video_id = os.path.basename(file_path).replace('.parquet', '')
-    
+    # Lấy video_id từ cột hoặc tên file
+    if 'video_id' in df.columns:
+        video_id = str(df['video_id'].iloc[0])
+    else:
+        video_id = os.path.basename(file_path).replace('.parquet', '')
+
     params = meta_map.get(video_id)
     if params is None:
+        # Không tìm thấy metadata, bỏ qua file này
         return
-    
     width = params['width']
     height = params['height']
     ppc = params['ppc']
@@ -80,7 +83,7 @@ def normalize_single_file(file_path, meta_map):
     dx = df_x_raw.diff().fillna(0).values
     dy = df_y_raw.diff().fillna(0).values
     speed = np.sqrt(dx**2 + dy**2) / ppc
-    
+    speed = np.nan_to_num(speed, posinf=0, neginf=0)
     df_speed = pd.DataFrame(speed, index=df_x_raw.index, 
                            columns=[f'{col}_speed' for col in df_x_raw.columns])
     
